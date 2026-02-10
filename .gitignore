@@ -27,3 +27,18 @@ out/
 src/main/resources/application-local.properties
 src/main/resources/application-local.yml
 
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code
+.vscode/
+*.code-workspace
+.history/
+
+# Database / Local logs
+*.log
+*.sql
+# 만약 DB 덤프 파일을 로컬에서 관리한다면 제외
+/db_dumps/
