@@ -31,6 +31,7 @@ assignees: ''
 <!-- 해당되는 항목 체크 -->
 - [ ] Front (Vue)
 - [ ] Back (Spring)
+- [ ] Infra
 - [ ] 둘 다
 
 ---
