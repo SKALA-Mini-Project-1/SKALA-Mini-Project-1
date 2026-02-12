@@ -17,13 +17,12 @@ public class SeatController {
 
     private final SeatReservationService seatReservationService;
 
-    /**
-     * 좌석 임시 선점 API
-     */
-    @PostMapping("/reserve")
+    @PostMapping("/{seatId}/hold")
     public ResponseEntity<String> reserveSeat(@RequestBody @Valid RequestSeatsDto requestDto) {
         boolean success = seatReservationService.reserveSeatTemporary(
-                requestDto.getSeatId(), 
+                requestDto.getConcertId(),
+                requestDto.getSeatId(),
+                requestDto.getSeatNumber(),
                 requestDto.getUserId()
         );
 

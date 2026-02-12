@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum SeatStatus {
     AVAILABLE("예약 가능"),
-    HELD("선점됨"),
-    SOLD("판매 완료");
+    HOLD("선점됨"),
+    RESERVED("판매 완료");
 
     private final String description;
 }

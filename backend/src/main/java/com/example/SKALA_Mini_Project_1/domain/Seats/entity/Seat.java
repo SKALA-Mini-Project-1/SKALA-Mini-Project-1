@@ -42,18 +42,18 @@ public class Seat {
      * @param holdDurationMinutes 선점 유지 시간(분)
      */
     public void hold(Long userId, int holdDurationMinutes) {
-        if (this.status == SeatStatus.SOLD) {
+        if (this.status == SeatStatus.RESERVED) {
             throw new IllegalStateException("이미 판매된 좌석입니다.");
         }
         
         // 이미 선점된 경우, 만료 시간이 지났는지 확인
-        if (this.status == SeatStatus.HELD && this.heldUntil != null && this.heldUntil.isAfter(LocalDateTime.now())) {
+        if (this.status == SeatStatus.HOLD && this.heldUntil != null && this.heldUntil.isAfter(LocalDateTime.now())) {
             if (!this.heldBy.equals(userId)) {
                 throw new IllegalStateException("이미 다른 사용자에 의해 선점된 좌석입니다.");
             }
         }
 
-        this.status = SeatStatus.HELD;
+        this.status = SeatStatus.HOLD;
         this.heldBy = userId;
         this.heldUntil = LocalDateTime.now().plusMinutes(holdDurationMinutes);
     }
@@ -71,16 +71,16 @@ public class Seat {
      * 최종 판매 완료
      */
     public void sell() {
-        if (this.status != SeatStatus.HELD) {
+        if (this.status != SeatStatus.HOLD) {
             throw new IllegalStateException("선점되지 않은 좌석은 판매할 수 없습니다.");
         }
-        this.status = SeatStatus.SOLD;
+        this.status = SeatStatus.RESERVED;
     }
 
     /**
      * 선점 만료 여부 확인
      */
     public boolean isHoldExpired() {
-        return this.status == SeatStatus.HELD && (this.heldUntil == null || this.heldUntil.isBefore(LocalDateTime.now()));
+        return this.status == SeatStatus.HOLD && (this.heldUntil == null || this.heldUntil.isBefore(LocalDateTime.now()));
     }
 }
