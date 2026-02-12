@@ -1,6 +1,5 @@
 package com.example.SKALA_Mini_Project_1;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -32,3 +31,4 @@ public class SkalaMiniProject1Application {
 	}
 
 }
+
