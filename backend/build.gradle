@@ -43,6 +43,9 @@ dependencies {
     // jwt 설정을 위한 의존성
     // testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
     // implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // Redis 설정을 위한 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 tasks.named('test') {
