@@ -1,4 +1,4 @@
-package com.example.skalaminiproject1.global.config;
+package com.example.SKALA_Mini_Project_1.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
