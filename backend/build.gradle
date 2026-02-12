@@ -41,6 +41,9 @@ dependencies {
 
     // Redis 설정을 위한 의존성
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // 분산 락을 위한 Redisson 설정
+    implementation 'org.redisson:redisson-spring-boot-starter:3.43.0'
 }
 
 tasks.named('test') {
