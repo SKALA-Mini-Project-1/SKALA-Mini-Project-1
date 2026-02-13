@@ -15,6 +15,7 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+<<<<<<< Updated upstream
     "pinia": "^3.0.4",
     "vue": "^3.5.27",
     "vue-router": "^5.0.1"
@@ -40,5 +41,23 @@
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
+=======
+    "@tosspayments/payment-sdk": "^1.9.2",
+    "lucide-vue-next": "^0.522.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.54.0",
+    "@typescript-eslint/parser": "^5.54.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "autoprefixer": "latest",
+    "eslint": "^8.50.0",
+    "postcss": "latest",
+    "tailwindcss": "3.4.17",
+    "typescript": "^5.5.4",
+    "vite": "^5.2.0",
+    "vue-tsc": "^2.1.10"
+>>>>>>> Stashed changes
   }
 }
