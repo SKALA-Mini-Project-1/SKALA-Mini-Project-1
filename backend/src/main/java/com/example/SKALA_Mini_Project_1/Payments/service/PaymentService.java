@@ -3,6 +3,7 @@
 package com.example.SKALA_Mini_Project_1.Payments.service;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +12,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.SKALA_Mini_Project_1.Payments.controller.dto.PaymentCreateRequest;
+import com.example.SKALA_Mini_Project_1.Payments.controller.dto.PaymentCreateResponse;
+import com.example.SKALA_Mini_Project_1.Payments.controller.dto.PaymentGetResponse;
 import com.example.SKALA_Mini_Project_1.Payments.controller.dto.PaymentSubmitResponse;
 import com.example.SKALA_Mini_Project_1.Payments.domain.Payment;
 import com.example.SKALA_Mini_Project_1.Payments.domain.PaymentStatus;
@@ -26,79 +30,186 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
 
-    // 허용된 상태 전이만 정의하는 전이 맵
     private static final Map<PaymentStatus, Set<PaymentStatus>> transitionMap = new EnumMap<>(PaymentStatus.class);
 
-    static {
-        transitionMap.put(PaymentStatus.PENDING,
-                Set.of(PaymentStatus.PAYING, PaymentStatus.CANCELED, PaymentStatus.EXPIRED));
 
-        transitionMap.put(PaymentStatus.PAYING,
-                Set.of(PaymentStatus.PAID, PaymentStatus.FAILED, PaymentStatus.CANCELED, PaymentStatus.EXPIRED));
-
-        transitionMap.put(PaymentStatus.PAID,
-                Set.of(PaymentStatus.CONFIRMED));
-
-        transitionMap.put(PaymentStatus.EXPIRED,
-                Set.of(PaymentStatus.REFUND_REQUIRED));
-    }
-
-    // 현재 상태에서 다음 상태로 전이가 가능한지 확인한다
-    private boolean canTransition(PaymentStatus from, PaymentStatus to) {
-        return transitionMap.containsKey(from)
-                && transitionMap.get(from).contains(to);
-    }
-
-    // 결제 상태를 비관락과 트랜잭션으로 안전하게 변경한다
+        /**
+     * 결제 생성: PENDING + expiredAt = now + 5분
+     */
+    // Create
     @Transactional
-    public void changeStatus(UUID paymentId, PaymentStatus newStatus) {
-
-        // 비관락으로 조회하여 동시에 수정되지 않도록 한다
-        Payment payment = paymentRepository.findByIdForUpdate(paymentId)
-            .orElseThrow(() -> new RuntimeException("Payment not found"));
-
-
-        PaymentStatus currentStatus = payment.getStatus();
-
-        // 허용되지 않은 상태 전이면 예외를 발생시킨다
-        if (!canTransition(currentStatus, newStatus)) {
-            throw new IllegalStateException(
-                    "Invalid status transition: " + currentStatus + " → " + newStatus);
+    public PaymentCreateResponse createPayment(PaymentCreateRequest req) {
+        if (req.getBookingId() == null) {
+            throw new IllegalArgumentException("bookingId is required");
         }
 
-        // 상태를 변경한다
-        payment.setStatus(newStatus);
+        // // Booking 관련이 없어서 검증은 일단 주석처리
+        // // 운영 기준: booking 존재 검증
+        // if (!bookingRepository.existsById(req.getBookingId())) {
+        //     throw new EntityNotFoundException("Booking not found: " + req.getBookingId());
+        // }
 
-        // 상태 변경 시간을 기록한다
-        payment.setUpdatedAt(OffsetDateTime.now());
+        // ✅ booking_id UNIQUE 대응: 이미 결제가 있으면 새로 만들지 말고 그대로 반환
+        return paymentRepository.findByBookingId(req.getBookingId())
+            .map(existing -> new PaymentCreateResponse(
+                    existing.getId(),
+                    existing.getStatus(),
+                    existing.getCreatedAt(),
+                    existing.getExpiredAt()
+            ))
+            .orElseGet(() -> {
+                OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        paymentRepository.save(payment);
+                Payment payment = new Payment();
+                payment.setBookingId(req.getBookingId());
+                payment.setUserId(req.getUserId());
+                payment.setSeatId(req.getSeatId());
+                payment.setAmount(req.getAmount());
+
+                payment.setStatus(PaymentStatus.PENDING);
+                payment.setCreatedAt(now);
+                payment.setUpdatedAt(now);
+                payment.setExpiredAt(now.plusMinutes(5)); // pending 5분
+                payment.setIdempotencyKey(null);
+
+                Payment saved = paymentRepository.save(payment);
+
+                return new PaymentCreateResponse(
+                        saved.getId(),
+                        saved.getStatus(),
+                        saved.getCreatedAt(),
+                        saved.getExpiredAt()
+                );
+            });
+    }
+
+    /**
+     * 결제 단건 조회
+     */
+    // Get
+    @Transactional(readOnly = true)
+    public PaymentGetResponse getPayment(UUID paymentId) {
+        Payment p = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new EntityNotFoundException("Payment not found: " + paymentId));
+
+        return new PaymentGetResponse(
+                p.getId(),
+                p.getBookingId(),
+                p.getUserId(),
+                p.getSeatId(),
+                p.getAmount(),
+                p.getStatus().name(),
+                p.getCreatedAt(),
+                p.getExpiredAt(),
+                p.getUpdatedAt(),
+                p.getIdempotencyKey()
+        );
     }
 
     @Transactional
-    public PaymentSubmitResponse submit(UUID paymentId) {
-        Payment payment = paymentRepository.findByIdForUpdate(paymentId)
-                .orElseThrow(() -> new EntityNotFoundException("Payment not found: " + paymentId));
+    public PaymentSubmitResponse submit(UUID paymentId, UUID userId) {
 
-        // 1) 상태 검증 + 전이 (changeStatus 메서드 대신 직접 검증)
-        changeStatus(paymentId, PaymentStatus.PAYING); // 기존 메서드 사용
+    Payment payment = paymentRepository.findByIdForUpdate(paymentId)
+            .orElseThrow(() -> new EntityNotFoundException("Payment not found: " + paymentId));
 
-        // 2) expired_at +3분 연장
-        OffsetDateTime now = OffsetDateTime.now(); // LocalDateTime -> OffsetDateTime
-        OffsetDateTime base = payment.getExpiredAt();
-        
-        OffsetDateTime effective = (base == null || base.isBefore(now)) ? now : base;
-        payment.setExpiredAt(effective.plusMinutes(3));
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        // 3) idempotencyKey 생성
-        payment.setIdempotencyKey(UUID.randomUUID().toString());
+    // 상태 전이
+    payment.changeStatus(PaymentStatus.PAYING);
 
-        // 4) updatedAt 갱신
-        payment.setUpdatedAt(now); // now도 OffsetDateTime으로
+    // TTL 연장
+    OffsetDateTime base = payment.getExpiredAt();
+    OffsetDateTime effective = (base == null || base.isBefore(now)) ? now : base;
+    payment.setExpiredAt(effective.plusMinutes(3));
 
-        // 5) 저장
-        paymentRepository.save(payment);
+    payment.setIdempotencyKey(UUID.randomUUID().toString());
+    payment.setUpdatedAt(now);
 
-        return PaymentSubmitResponse.from(payment);
+    // PG 정보 세팅
+    payment.setPgProvider("TOSS");
+
+    String orderId = "PAY_" + payment.getId();
+    payment.setPgOrderId(orderId);
+
+    // 임시 orderName 처리
+    if (payment.getOrderName() == null) {
+        payment.setOrderName("Ticket Payment");
     }
+
+    payment.setSubmittedAt(now);
+
+    paymentRepository.save(payment);
+
+    return new PaymentSubmitResponse(
+            payment.getId(),
+            payment.getStatus().name(),
+            payment.getExpiredAt(),
+            payment.getIdempotencyKey(),
+            payment.getUpdatedAt(),
+            payment.getBookingId(),
+            payment.getAmount(),
+            orderId,
+            "USER_" + userId,
+            payment.getOrderName(),
+            "http://localhost:8081/payments/toss/success",
+            "http://localhost:8081/payments/toss/fail"
+    );
+    }
+
+    @Transactional
+    public void handleTossSuccess(String paymentKey, String orderId, Long amount) {
+
+    Payment payment = paymentRepository.findByPgOrderIdForUpdate(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+
+    // 금액 위변조 방지
+    if (!payment.getAmount().equals(amount)) {
+        throw new IllegalStateException("Amount mismatch");
+    }
+
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+    // TODO: 여기서 실제 Toss Confirm API 호출 필요
+    // RestTemplate 또는 WebClient 사용해서 /v1/payments/confirm 호출
+
+    payment.setPgPaymentKey(paymentKey);
+    payment.setPgStatus("CONFIRMED");
+
+    // 정책 A 적용
+    if (payment.getExpiredAt().isBefore(now)
+            || payment.getStatus() == PaymentStatus.EXPIRED) {
+
+        payment.changeStatus(PaymentStatus.REFUND_REQUIRED);
+
+    } else {
+        payment.changeStatus(PaymentStatus.PAID);
+        payment.setCompletedAt(now);
+    }
+
+    paymentRepository.save(payment);
+    }
+
+    @Transactional
+    public void handleTossFail(String orderId, String code, String message) {
+
+    Payment payment = paymentRepository.findByPgOrderIdForUpdate(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Payment not found: " + orderId));
+
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+    // 실패 정보는 최소한 로그로라도 남긴다(컬럼 없으면 pgStatus에 합쳐 저장)
+    String failInfo = "FAILED" 
+            + (code != null ? ("|" + code) : "")
+            + (message != null ? ("|" + message) : "");
+    payment.setPgStatus(failInfo);
+    payment.setUpdatedAt(now);
+
+    if (payment.getStatus() == PaymentStatus.PAYING) {
+        payment.changeStatus(PaymentStatus.FAILED);
+    }
+
+    paymentRepository.save(payment);
+    }
+
+
 }

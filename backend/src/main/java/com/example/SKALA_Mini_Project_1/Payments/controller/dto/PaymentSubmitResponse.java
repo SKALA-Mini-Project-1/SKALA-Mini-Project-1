@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import java.math.BigDecimal;
 
 
 
@@ -18,13 +19,14 @@ public class PaymentSubmitResponse {
     private String idempotencyKey;
     private OffsetDateTime updatedAt;
 
-    public static PaymentSubmitResponse from(Payment p) {
-        return new PaymentSubmitResponse(
-                p.getId(),
-                p.getStatus().name(),
-                p.getExpiredAt(),
-                p.getIdempotencyKey(),
-                p.getUpdatedAt()
-        );
-    }
+    private UUID bookingId;
+
+    private BigDecimal amount;
+
+    // PG 위젯 호출용 값들
+    private String orderId;
+    private String customerKey;
+    private String orderName;
+    private String successUrl;
+    private String failUrl;
 }
