@@ -18,7 +18,13 @@ public class Seat {
     private Long id;
 
     @Column(nullable = false)
-    private String seatNumber;
+    private String section;
+
+    @Column(name = "row_number", nullable = false)
+    private Integer rowNumber;
+
+    @Column(name = "seat_number", nullable = false)
+    private Integer seatNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -31,7 +37,9 @@ public class Seat {
     @Version
     private Long version;
 
-    public Seat(String seatNumber) {
+    public Seat(String section, Integer rowNumber, Integer seatNumber) {
+        this.section = section;
+        this.rowNumber = rowNumber;
         this.seatNumber = seatNumber;
         this.status = SeatStatus.AVAILABLE;
     }
