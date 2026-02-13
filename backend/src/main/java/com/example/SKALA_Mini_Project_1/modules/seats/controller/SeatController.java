@@ -1,5 +1,9 @@
 package com.example.SKALA_Mini_Project_1.modules.seats.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +22,22 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/seats")
+@Tag(name = "좌석", description = "좌석 선점/해제 API")
 public class SeatController {
 
     private final SeatReservationService seatReservationService;
 
     @PostMapping("/{seatId}/hold")
+    @Operation(
+            summary = "좌석 선점 또는 해제",
+            description = "좌석을 선점합니다. 이미 같은 사용자가 선점한 좌석을 다시 요청하면 선점이 해제됩니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "선점 성공 또는 선점 해제 성공"),
+            @ApiResponse(responseCode = "400", description = "요청 좌석 정보 불일치"),
+            @ApiResponse(responseCode = "404", description = "좌석 ID 없음"),
+            @ApiResponse(responseCode = "409", description = "다른 사용자가 이미 선점했거나 판매 완료된 좌석")
+    })
     public ResponseEntity<?> reserveSeat(@RequestBody @Valid RequestSeatsDto requestDto) {
         try {
             SeatReservationService.SeatHoldResult result = seatReservationService.reserveSeatTemporary(
