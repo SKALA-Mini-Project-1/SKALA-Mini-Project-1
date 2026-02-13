@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Payments.domain;
+package com.example.SKALA_Mini_Project_1.modules.payments.domain;
 
 public enum PaymentStatus {
     PENDING,

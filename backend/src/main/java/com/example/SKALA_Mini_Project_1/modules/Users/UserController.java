@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Users;
+package com.example.SKALA_Mini_Project_1.modules.users;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,15 +16,15 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.SKALA_Mini_Project_1.Common.ErrorResponse;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.EmailVerificationCodeRequest;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.EmailVerificationRequest;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.EmailVerificationResponse;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.LoginRequest;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.LoginResponse;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.SignUpRequest;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.SignUpResponse;
-import com.example.SKALA_Mini_Project_1.modules.Users.service.EmailVerificationService;
+import com.example.SKALA_Mini_Project_1.common.ErrorResponse;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.EmailVerificationCodeRequest;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.EmailVerificationRequest;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.EmailVerificationResponse;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.LoginRequest;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.LoginResponse;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.SignUpRequest;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.SignUpResponse;
+import com.example.SKALA_Mini_Project_1.modules.users.service.EmailVerificationService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

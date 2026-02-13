@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Seats.domain;
+package com.example.SKALA_Mini_Project_1.modules.seats.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Waiting.dto;
+package com.example.SKALA_Mini_Project_1.modules.waiting.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

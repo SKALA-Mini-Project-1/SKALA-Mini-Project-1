@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Seats.domain;
+package com.example.SKALA_Mini_Project_1.modules.seats.domain;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

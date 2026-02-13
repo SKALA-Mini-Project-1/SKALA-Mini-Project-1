@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Seats.controller;
+package com.example.SKALA_Mini_Project_1.modules.seats.controller;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.SKALA_Mini_Project_1.modules.Seats.dto.RequestSeatsDto;
-import com.example.SKALA_Mini_Project_1.modules.Seats.service.SeatReservationService;
+import com.example.SKALA_Mini_Project_1.modules.seats.dto.RequestSeatsDto;
+import com.example.SKALA_Mini_Project_1.modules.seats.service.SeatReservationService;
 
 import java.util.Map;
 
@@ -25,7 +25,7 @@ public class SeatController {
     @PostMapping("/{seatId}/hold")
     public ResponseEntity<?> reserveSeat(@RequestBody @Valid RequestSeatsDto requestDto) {
         try {
-            seatReservationService.reserveSeatTemporary(
+            SeatReservationService.SeatHoldResult result = seatReservationService.reserveSeatTemporary(
                     requestDto.getConcertId(),
                     requestDto.getSeatId(),
                     requestDto.getSection(),
@@ -34,9 +34,18 @@ public class SeatController {
                     requestDto.getUserId()
             );
 
+            if (result == SeatReservationService.SeatHoldResult.RELEASED) {
+                return ResponseEntity.ok(Map.of(
+                        "message", "선점한 좌석이 해제되었습니다.",
+                        "status", "success",
+                        "action", "released"
+                ));
+            }
+
             return ResponseEntity.ok(Map.of(
                     "message", "좌석이 성공적으로 선점되었습니다.",
-                    "status", "success"
+                    "status", "success",
+                    "action", "held"
             ));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(

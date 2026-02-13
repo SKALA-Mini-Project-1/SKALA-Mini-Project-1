@@ -1,5 +1,5 @@
-package com.example.SKALA_Mini_Project_1.modules.Waiting;
+package com.example.SKALA_Mini_Project_1.modules.waiting;
 
-public class waiting {
+public class Waiting {
 
 }
