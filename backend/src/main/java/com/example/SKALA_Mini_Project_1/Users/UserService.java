@@ -9,9 +9,12 @@ import com.example.SKALA_Mini_Project_1.Users.dto.LoginResponse;
 import com.example.SKALA_Mini_Project_1.Users.dto.SignUpRequest;
 import com.example.SKALA_Mini_Project_1.Users.dto.SignUpResponse;
 import com.example.SKALA_Mini_Project_1.global.jwt.JwtUtil;
+import com.example.SKALA_Mini_Project_1.global.redis.RedisTokenBlacklistService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -20,6 +23,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RedisTokenBlacklistService blacklistService;
+
     
     // 로그인
     public LoginResponse login(LoginRequest request) {
@@ -44,6 +49,34 @@ public class UserService {
                 .message("로그인 성공")
                 .accessToken(accessToken)
                 .build();
+    }
+
+    // 로그아웃
+    public void logout(String token) {
+        // 1. 토큰 유효성 검증
+        if (!jwtUtil.validateToken(token)) {
+            log.warn("유효하지 않은 토큰으로 로그아웃 시도");
+            throw new IllegalArgumentException("유효하지 않은 토큰입니다");
+        }
+        
+        // 2. 이미 블랙리스트에 있는지 확인
+        if (blacklistService.isBlacklisted(token)) {
+            log.warn("이미 로그아웃된 토큰");
+            throw new IllegalArgumentException("이미 로그아웃된 토큰입니다");
+        }
+        
+        // 3. 토큰의 남은 만료 시간 계산
+        long expirationTimeMs = jwtUtil.getExpirationTimeMs(token);
+        
+        if (expirationTimeMs <= 0) {
+            log.warn("이미 만료된 토큰으로 로그아웃 시도");
+            throw new IllegalArgumentException("이미 만료된 토큰입니다");
+        }
+        
+        // 4. Redis 블랙리스트에 토큰 추가
+        blacklistService.addToBlacklist(token, expirationTimeMs);
+        
+        log.info("로그아웃 성공 - 토큰 블랙리스트 등록 완료 (TTL: {}ms)", expirationTimeMs);
     }
 
     // 회원가입
