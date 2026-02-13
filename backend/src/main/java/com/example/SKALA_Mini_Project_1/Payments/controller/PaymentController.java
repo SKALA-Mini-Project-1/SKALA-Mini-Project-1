@@ -8,6 +8,7 @@ import com.example.SKALA_Mini_Project_1.Payments.service.PaymentService;
 
 import java.net.URI;
 import java.util.UUID;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -53,7 +54,7 @@ public class PaymentController {
     public ResponseEntity<Void> tossSuccess(
         @RequestParam String paymentKey,
         @RequestParam String orderId,
-        @RequestParam Long amount) {
+        @RequestParam BigDecimal amount) {
 
     paymentService.handleTossSuccess(paymentKey, orderId, amount);
 

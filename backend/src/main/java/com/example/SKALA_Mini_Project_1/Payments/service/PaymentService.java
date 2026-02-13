@@ -8,9 +8,15 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.RestTemplate;
 
 import com.example.SKALA_Mini_Project_1.Payments.controller.dto.PaymentCreateRequest;
 import com.example.SKALA_Mini_Project_1.Payments.controller.dto.PaymentCreateResponse;
@@ -19,6 +25,7 @@ import com.example.SKALA_Mini_Project_1.Payments.controller.dto.PaymentSubmitRes
 import com.example.SKALA_Mini_Project_1.Payments.domain.Payment;
 import com.example.SKALA_Mini_Project_1.Payments.domain.PaymentStatus;
 import com.example.SKALA_Mini_Project_1.Payments.repository.PaymentRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -157,36 +164,116 @@ public class PaymentService {
     }
 
     @Transactional
-    public void handleTossSuccess(String paymentKey, String orderId, Long amount) {
+    public void handleTossSuccess(String paymentKey, String orderId, BigDecimal amount) {
 
-    Payment payment = paymentRepository.findByPgOrderIdForUpdate(orderId)
-            .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+        // =========================
+        // 1) 결제 조회(비관락)
+        // =========================
+        Payment payment = paymentRepository.findByPgOrderIdForUpdate(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
 
-    // 금액 위변조 방지
-    if (!payment.getAmount().equals(amount)) {
-        throw new IllegalStateException("Amount mismatch");
+        // =========================
+        // 2) 금액 위변조 방지
+        // =========================
+        if (payment.getAmount() == null || amount == null || payment.getAmount().compareTo(amount) != 0) {
+            throw new IllegalStateException("Amount mismatch");
+        }
+
+        // =========================
+        // 3) 현재 시각(UTC) + 만료 여부 판단
+        // =========================
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        boolean isExpiredNow = payment.getExpiredAt() != null && payment.getExpiredAt().isBefore(now);
+        boolean isExpiredStatus = payment.getStatus() == PaymentStatus.EXPIRED;
+        boolean shouldMarkRefundRequired = isExpiredNow || isExpiredStatus;
+
+        // =========================
+        // 4) Toss Confirm API 호출
+        //    - 승인 성공이면 응답 저장 유지
+        //    - 승인 실패면 응답 저장 후 예외
+        // =========================
+        String confirmResponseBody;
+        try {
+            confirmResponseBody = tossConfirm(paymentKey, orderId, amount);
+        } catch (RestClientResponseException e) {
+            payment.setPgPaymentKey(paymentKey);
+            payment.setPgStatus(e.getResponseBodyAsString());
+            payment.setUpdatedAt(now);
+            paymentRepository.save(payment);
+
+            throw new IllegalStateException("Toss confirm failed: " + e.getRawStatusCode());
+        } catch (Exception e) {
+            payment.setPgPaymentKey(paymentKey);
+            payment.setPgStatus("CONFIRM_EXCEPTION: " + e.getClass().getSimpleName());
+            payment.setUpdatedAt(now);
+            paymentRepository.save(payment);
+
+            throw new IllegalStateException("Toss confirm failed");
+        }
+
+        // =========================
+        // 5) 승인 성공: pg 식별자/응답 저장
+        // =========================
+        payment.setPgPaymentKey(paymentKey);
+        payment.setPgStatus(confirmResponseBody);
+        payment.setUpdatedAt(now);
+
+        // =========================
+        // 6) 정책 A + 상태 전이
+        //    - 만료 후 성공: REFUND_REQUIRED
+        //    - 정상: PAID + completedAt
+        // =========================
+        if (shouldMarkRefundRequired) {
+            payment.changeStatus(PaymentStatus.REFUND_REQUIRED);
+        } else {
+            payment.changeStatus(PaymentStatus.PAID);
+            payment.setCompletedAt(now);
+        }
+
+        paymentRepository.save(payment);
     }
 
-    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+    // ======================================================================
+    // Toss Confirm 호출부
+    // ======================================================================
+    @Value("${toss.secret-key}")
+    private String tossSecretKey;
 
-    // TODO: 여기서 실제 Toss Confirm API 호출 필요
-    // RestTemplate 또는 WebClient 사용해서 /v1/payments/confirm 호출
+    @Value("${toss.api-base}")
+    private String tossApiBase;
 
-    payment.setPgPaymentKey(paymentKey);
-    payment.setPgStatus("CONFIRMED");
+    private final RestTemplate restTemplate = new RestTemplate();
 
-    // 정책 A 적용
-    if (payment.getExpiredAt().isBefore(now)
-            || payment.getStatus() == PaymentStatus.EXPIRED) {
+    private String tossConfirm(String paymentKey, String orderId, BigDecimal amount) {
 
-        payment.changeStatus(PaymentStatus.REFUND_REQUIRED);
+        String basicToken = Base64.getEncoder().encodeToString(
+                (tossSecretKey + ":").getBytes(StandardCharsets.UTF_8)
+        );
 
-    } else {
-        payment.changeStatus(PaymentStatus.PAID);
-        payment.setCompletedAt(now);
-    }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Basic " + basicToken);
 
-    paymentRepository.save(payment);
+        Map<String, Object> body = Map.of(
+                "paymentKey", paymentKey,
+                "orderId", orderId,
+                "amount", amount
+        );
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+        ResponseEntity<String> resp = restTemplate.exchange(
+                tossApiBase + "/v1/payments/confirm",
+                HttpMethod.POST,
+                request,
+                String.class
+        );
+
+        if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
+            throw new IllegalStateException("Toss confirm unexpected response");
+        }
+
+        return resp.getBody();
     }
 
     @Transactional
