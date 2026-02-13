@@ -57,6 +57,28 @@ public class Payment {
     @Column(name = "booking_id", columnDefinition = "uuid", nullable = false)
     private UUID bookingId;
 
+    // 결제 당시 PG로 보낸 상품명 저장용
+    @Column(name = "order_name")
+    private String orderName;
+
+    @Column(name = "pg_provider")
+    private String pgProvider;
+
+    @Column(name = "pg_order_id")
+    private String pgOrderId;
+
+        @Column(name = "pg_payment_key")
+        private String pgPaymentKey;
+
+        @Column(name = "pg_status")
+        private String pgStatus;
+
+    @Column(name = "submitted_at")
+    private OffsetDateTime submittedAt;
+
+        @Column(name = "completed_at")
+        private OffsetDateTime completedAt;
+
         // ✅ 허용된 상태 전이만 정의하는 전이 맵 (엔티티로 이동)
     private static final Map<PaymentStatus, Set<PaymentStatus>> TRANSITION_MAP =
             new EnumMap<>(PaymentStatus.class);

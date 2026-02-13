@@ -107,16 +107,17 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentSubmitResponse submit(UUID paymentId) {
+    public PaymentSubmitResponse submit(UUID paymentId, UUID userId) {
+
     Payment payment = paymentRepository.findByIdForUpdate(paymentId)
             .orElseThrow(() -> new EntityNotFoundException("Payment not found: " + paymentId));
 
     OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-    // ✅ 엔티티 전이 규칙 사용
+    // 상태 전이
     payment.changeStatus(PaymentStatus.PAYING);
 
-    // expired_at +3분 연장
+    // TTL 연장
     OffsetDateTime base = payment.getExpiredAt();
     OffsetDateTime effective = (base == null || base.isBefore(now)) ? now : base;
     payment.setExpiredAt(effective.plusMinutes(3));
@@ -124,9 +125,91 @@ public class PaymentService {
     payment.setIdempotencyKey(UUID.randomUUID().toString());
     payment.setUpdatedAt(now);
 
-    // save는 선택(팀 스타일이면 유지)
+    // PG 정보 세팅
+    payment.setPgProvider("TOSS");
+
+    String orderId = "PAY_" + payment.getId();
+    payment.setPgOrderId(orderId);
+
+    // 임시 orderName 처리
+    if (payment.getOrderName() == null) {
+        payment.setOrderName("Ticket Payment");
+    }
+
+    payment.setSubmittedAt(now);
+
     paymentRepository.save(payment);
 
-    return PaymentSubmitResponse.from(payment);
+    return new PaymentSubmitResponse(
+            payment.getId(),
+            payment.getStatus().name(),
+            payment.getExpiredAt(),
+            payment.getIdempotencyKey(),
+            payment.getUpdatedAt(),
+            payment.getBookingId(),
+            payment.getAmount(),
+            orderId,
+            "USER_" + userId,
+            payment.getOrderName(),
+            "http://localhost:8081/payments/toss/success",
+            "http://localhost:8081/payments/toss/fail"
+    );
     }
+
+    @Transactional
+    public void handleTossSuccess(String paymentKey, String orderId, Long amount) {
+
+    Payment payment = paymentRepository.findByPgOrderIdForUpdate(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+
+    // 금액 위변조 방지
+    if (!payment.getAmount().equals(amount)) {
+        throw new IllegalStateException("Amount mismatch");
+    }
+
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+    // TODO: 여기서 실제 Toss Confirm API 호출 필요
+    // RestTemplate 또는 WebClient 사용해서 /v1/payments/confirm 호출
+
+    payment.setPgPaymentKey(paymentKey);
+    payment.setPgStatus("CONFIRMED");
+
+    // 정책 A 적용
+    if (payment.getExpiredAt().isBefore(now)
+            || payment.getStatus() == PaymentStatus.EXPIRED) {
+
+        payment.changeStatus(PaymentStatus.REFUND_REQUIRED);
+
+    } else {
+        payment.changeStatus(PaymentStatus.PAID);
+        payment.setCompletedAt(now);
+    }
+
+    paymentRepository.save(payment);
+    }
+
+    @Transactional
+    public void handleTossFail(String orderId, String code, String message) {
+
+    Payment payment = paymentRepository.findByPgOrderIdForUpdate(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("Payment not found: " + orderId));
+
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+    // 실패 정보는 최소한 로그로라도 남긴다(컬럼 없으면 pgStatus에 합쳐 저장)
+    String failInfo = "FAILED" 
+            + (code != null ? ("|" + code) : "")
+            + (message != null ? ("|" + message) : "");
+    payment.setPgStatus(failInfo);
+    payment.setUpdatedAt(now);
+
+    if (payment.getStatus() == PaymentStatus.PAYING) {
+        payment.changeStatus(PaymentStatus.FAILED);
+    }
+
+    paymentRepository.save(payment);
+    }
+
+
 }
