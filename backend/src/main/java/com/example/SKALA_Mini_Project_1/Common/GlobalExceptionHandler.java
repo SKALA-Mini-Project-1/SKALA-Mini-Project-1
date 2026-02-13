@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.Common;
+package com.example.SKALA_Mini_Project_1.common;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;

@@ -1,6 +1,6 @@
 // 결제 상태를 전이표에 맞게만 변경하도록 강제하는 서비스
 
-package com.example.SKALA_Mini_Project_1.modules.Payments.service;
+package com.example.SKALA_Mini_Project_1.modules.payments.service;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -12,13 +12,13 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto.PaymentCreateRequest;
-import com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto.PaymentCreateResponse;
-import com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto.PaymentGetResponse;
-import com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto.PaymentSubmitResponse;
-import com.example.SKALA_Mini_Project_1.modules.Payments.domain.Payment;
-import com.example.SKALA_Mini_Project_1.modules.Payments.domain.PaymentStatus;
-import com.example.SKALA_Mini_Project_1.modules.Payments.repository.PaymentRepository;
+import com.example.SKALA_Mini_Project_1.modules.payments.controller.dto.PaymentCreateRequest;
+import com.example.SKALA_Mini_Project_1.modules.payments.controller.dto.PaymentCreateResponse;
+import com.example.SKALA_Mini_Project_1.modules.payments.controller.dto.PaymentGetResponse;
+import com.example.SKALA_Mini_Project_1.modules.payments.controller.dto.PaymentSubmitResponse;
+import com.example.SKALA_Mini_Project_1.modules.payments.domain.Payment;
+import com.example.SKALA_Mini_Project_1.modules.payments.domain.PaymentStatus;
+import com.example.SKALA_Mini_Project_1.modules.payments.repository.PaymentRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;

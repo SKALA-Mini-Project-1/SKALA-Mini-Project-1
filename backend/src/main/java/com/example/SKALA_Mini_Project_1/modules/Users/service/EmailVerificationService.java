@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Users.service;
+package com.example.SKALA_Mini_Project_1.modules.users.service;
 
 import java.security.SecureRandom;
 import java.util.Optional;
@@ -10,8 +10,8 @@ import com.example.SKALA_Mini_Project_1.global.email.EmailProperties;
 import com.example.SKALA_Mini_Project_1.global.email.EmailService;
 import com.example.SKALA_Mini_Project_1.global.redis.RedisEmailVerificationRepository;
 import com.example.SKALA_Mini_Project_1.global.util.EmailValidator;
-import com.example.SKALA_Mini_Project_1.modules.Users.UserRepository;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.EmailVerificationResponse;
+import com.example.SKALA_Mini_Project_1.modules.users.UserRepository;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.EmailVerificationResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

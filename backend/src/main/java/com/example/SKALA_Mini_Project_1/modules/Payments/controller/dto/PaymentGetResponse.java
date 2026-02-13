@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto;
+package com.example.SKALA_Mini_Project_1.modules.payments.controller.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

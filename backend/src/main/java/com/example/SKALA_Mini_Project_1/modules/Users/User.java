@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Users;
+package com.example.SKALA_Mini_Project_1.modules.users;
 
 import java.time.LocalDateTime;
 

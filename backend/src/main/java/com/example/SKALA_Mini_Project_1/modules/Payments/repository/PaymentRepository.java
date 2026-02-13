@@ -1,6 +1,6 @@
 // 결제 상태 변경 시 동시성 충돌을 막기 위해 SELECT FOR UPDATE로 조회하는 레포지토리
 
-package com.example.SKALA_Mini_Project_1.modules.Payments.repository;
+package com.example.SKALA_Mini_Project_1.modules.payments.repository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.example.SKALA_Mini_Project_1.modules.Payments.domain.Payment;
+import com.example.SKALA_Mini_Project_1.modules.payments.domain.Payment;
 
 import jakarta.persistence.LockModeType;
 

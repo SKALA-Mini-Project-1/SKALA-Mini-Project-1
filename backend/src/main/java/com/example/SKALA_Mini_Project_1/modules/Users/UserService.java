@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Users;
+package com.example.SKALA_Mini_Project_1.modules.users;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -6,11 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.SKALA_Mini_Project_1.global.jwt.JwtUtil;
 import com.example.SKALA_Mini_Project_1.global.redis.RedisTokenBlacklistService;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.LoginRequest;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.LoginResponse;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.SignUpRequest;
-import com.example.SKALA_Mini_Project_1.modules.Users.dto.SignUpResponse;
-import com.example.SKALA_Mini_Project_1.modules.Users.service.EmailVerificationService;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.LoginRequest;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.LoginResponse;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.SignUpRequest;
+import com.example.SKALA_Mini_Project_1.modules.users.dto.SignUpResponse;
+import com.example.SKALA_Mini_Project_1.modules.users.service.EmailVerificationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Users.dto;
+package com.example.SKALA_Mini_Project_1.modules.users.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

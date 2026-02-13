@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Payments.controller;
+package com.example.SKALA_Mini_Project_1.modules.payments.controller;
 
 import java.net.URI;
 import java.util.UUID;
@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto.PaymentCreateRequest;
-import com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto.PaymentCreateResponse;
-import com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto.PaymentGetResponse;
-import com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto.PaymentSubmitResponse;
-import com.example.SKALA_Mini_Project_1.modules.Payments.service.PaymentService;
+import com.example.SKALA_Mini_Project_1.modules.payments.controller.dto.PaymentCreateRequest;
+import com.example.SKALA_Mini_Project_1.modules.payments.controller.dto.PaymentCreateResponse;
+import com.example.SKALA_Mini_Project_1.modules.payments.controller.dto.PaymentGetResponse;
+import com.example.SKALA_Mini_Project_1.modules.payments.controller.dto.PaymentSubmitResponse;
+import com.example.SKALA_Mini_Project_1.modules.payments.service.PaymentService;
 
 
 @RestController

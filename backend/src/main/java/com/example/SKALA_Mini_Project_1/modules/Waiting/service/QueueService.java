@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Waiting.service;
+package com.example.SKALA_Mini_Project_1.modules.waiting.service;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,6 @@
 // 결제 생성에 필요한 최소 입력값을 받는다
 
-package com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto;
+package com.example.SKALA_Mini_Project_1.modules.payments.controller.dto;
 
 import java.math.BigDecimal;
 

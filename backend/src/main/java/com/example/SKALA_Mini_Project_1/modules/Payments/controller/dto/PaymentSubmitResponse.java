@@ -1,9 +1,9 @@
-package com.example.SKALA_Mini_Project_1.modules.Payments.controller.dto;
+package com.example.SKALA_Mini_Project_1.modules.payments.controller.dto;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import com.example.SKALA_Mini_Project_1.modules.Payments.domain.Payment;
+import com.example.SKALA_Mini_Project_1.modules.payments.domain.Payment;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Seats.dto;
+package com.example.SKALA_Mini_Project_1.modules.seats.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

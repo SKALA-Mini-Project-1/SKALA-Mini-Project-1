@@ -1,4 +1,4 @@
-package com.example.SKALA_Mini_Project_1.modules.Users.dto;
+package com.example.SKALA_Mini_Project_1.modules.users.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
