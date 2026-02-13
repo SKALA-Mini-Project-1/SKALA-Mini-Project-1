@@ -8,6 +8,7 @@ import com.example.SKALA_Mini_Project_1.Users.dto.LoginRequest;
 import com.example.SKALA_Mini_Project_1.Users.dto.LoginResponse;
 import com.example.SKALA_Mini_Project_1.Users.dto.SignUpRequest;
 import com.example.SKALA_Mini_Project_1.Users.dto.SignUpResponse;
+import com.example.SKALA_Mini_Project_1.Users.service.EmailVerificationService;
 import com.example.SKALA_Mini_Project_1.global.jwt.JwtUtil;
 import com.example.SKALA_Mini_Project_1.global.redis.RedisTokenBlacklistService;
 
@@ -24,6 +25,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RedisTokenBlacklistService blacklistService;
+    private final EmailVerificationService emailVerificationService;
 
     
     // 로그인
@@ -79,15 +81,18 @@ public class UserService {
         log.info("로그아웃 성공 - 토큰 블랙리스트 등록 완료 (TTL: {}ms)", expirationTimeMs);
     }
 
-    // 회원가입
+    // 회원가입(이메일 인증 필수)
     @Transactional
     public SignUpResponse signUp(SignUpRequest request) {
         // 1. 이메일 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다");
         }
-        
-        // 2. 사용자 엔티티 생성 (나중에 비밀번호 암호화 추가 예정)
+        // 2. 이메일 인증 완료 여부 확인
+        if (!emailVerificationService.isEmailVerified(request.getEmail())) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다. 먼저 이메일 인증을 진행해주세요.");
+        }
+        // 3. 사용자 엔티티 생성 (나중에 비밀번호 암호화 추가 예정)
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))  // ✨ 암호화
@@ -95,10 +100,16 @@ public class UserService {
                 .phone(request.getPhone())
                 .build();
         
-        // 3. DB에 저장
+        // 4. DB에 저장
         User savedUser = userRepository.save(user);
         
-        // 4. 응답 생성
+        // 5. 인증 완료 플래그 삭제 (회원가입 완료되었으므로 더 이상 불필요)
+        emailVerificationService.clearVerifiedFlag(request.getEmail());
+        
+        log.info("회원가입 성공 - 이메일: {}, 사용자 ID: {}", savedUser.getEmail(), savedUser.getId());
+        
+
+        // 6. 응답 생성
         return SignUpResponse.builder()
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())

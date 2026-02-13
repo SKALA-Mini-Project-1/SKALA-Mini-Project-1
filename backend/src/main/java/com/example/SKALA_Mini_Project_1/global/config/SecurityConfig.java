@@ -45,7 +45,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/users/signup",
                     "/api/users/login",
-                    "/api/users/logout"
+                    "/api/users/logout",
+                    "/api/users/email/**"
                 ).permitAll()
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()
