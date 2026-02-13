@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.example.SKALA_Mini_Project_1.global.redis.RedisTokenBlacklistService;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtUtil jwtUtil;
+    private final RedisTokenBlacklistService blacklistService;
     
     @Override
     protected void doFilterInternal(
@@ -35,6 +38,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             // 2. 토큰 유효성 검증
             if (token != null && jwtUtil.validateToken(token)) {
+                // ✨ 블랙리스트 확인 - 로그아웃된 토큰인지 체크
+                if (blacklistService.isBlacklisted(token)) {
+                    logger.warn("블랙리스트에 등록된 토큰 사용 시도");
+                    filterChain.doFilter(request, response);
+                    return;
+                }
                 // 3. 토큰에서 사용자 정보 추출
                 Long userId = jwtUtil.getUserIdFromToken(token);
                 String email = jwtUtil.getEmailFromToken(token);

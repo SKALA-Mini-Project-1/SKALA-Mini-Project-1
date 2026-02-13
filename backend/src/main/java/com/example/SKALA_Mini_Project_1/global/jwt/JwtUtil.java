@@ -54,6 +54,16 @@ public class JwtUtil {
         return claims.get("email", String.class);
     }
     
+    // 토큰 만료 시간까지 남은 시간 (밀리초) 계산
+    public long getExpirationTimeMs(String token) {
+        Claims claims = parseClaims(token);
+        Date expiration = claims.getExpiration();
+        Date now = new Date();
+        
+        long remainingTime = expiration.getTime() - now.getTime();
+        return Math.max(remainingTime, 0); // 음수 방지
+    }
+
     // 토큰 유효성 검증
     public boolean validateToken(String token) {
         try {
