@@ -9,13 +9,16 @@ import com.example.SKALA_Mini_Project_1.Payments.domain.PaymentStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
+@Setter
 @Getter
 @AllArgsConstructor
 public class PaymentCreateResponse {
 
     private UUID paymentId;
     private PaymentStatus status;
+    private OffsetDateTime createdAt;
     private OffsetDateTime expiredAt;
 
 }
