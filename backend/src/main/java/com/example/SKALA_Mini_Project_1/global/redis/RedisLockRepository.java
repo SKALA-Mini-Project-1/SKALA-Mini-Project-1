@@ -12,9 +12,9 @@ import lombok.RequiredArgsConstructor;
 public class RedisLockRepository {
     private final RedisTemplate<String, String> redisTemplate;
 
-    public boolean lockSeat(Long concertId, String seatNumber, String userId) {
+    public boolean lockSeat(Long concertId, String section, Integer rowNumber, Integer seatNumber, String userId) {
 
-        String key = RedisKeyGenerator.seatLockKey(concertId, seatNumber);
+        String key = RedisKeyGenerator.seatLockKey(concertId, section, rowNumber, seatNumber);
 
         Boolean success = redisTemplate.opsForValue()
                 .setIfAbsent(key, userId, Duration.ofMinutes(5));
@@ -22,16 +22,16 @@ public class RedisLockRepository {
         return Boolean.TRUE.equals(success);
     }
 
-    public void unlockSeat(Long concertId, String seatNumber) {
+    public void unlockSeat(Long concertId, String section, Integer rowNumber, Integer seatNumber) {
 
-        String key = RedisKeyGenerator.seatLockKey(concertId, seatNumber);
+        String key = RedisKeyGenerator.seatLockKey(concertId, section, rowNumber, seatNumber);
 
         redisTemplate.delete(key);
     }
 
-    public String getSeatOwner(Long concertId, String seatNumber) {
+    public String getSeatOwner(Long concertId, String section, Integer rowNumber, Integer seatNumber) {
 
-        String key = RedisKeyGenerator.seatLockKey(concertId, seatNumber);
+        String key = RedisKeyGenerator.seatLockKey(concertId, section, rowNumber, seatNumber);
 
         return redisTemplate.opsForValue().get(key);
     }
