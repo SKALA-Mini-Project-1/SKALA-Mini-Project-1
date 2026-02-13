@@ -7,10 +7,13 @@ import java.math.BigDecimal;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.UUID;
 
 @Getter
 @Setter
 public class PaymentCreateRequest {
+
+    private UUID bookingId;
 
     @NotNull
     private Long userId;
