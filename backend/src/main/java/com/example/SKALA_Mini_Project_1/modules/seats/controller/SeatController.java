@@ -1,6 +1,8 @@
 package com.example.SKALA_Mini_Project_1.modules.seats.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.SKALA_Mini_Project_1.modules.seats.dto.BatchSeatHoldRequest;
 import com.example.SKALA_Mini_Project_1.modules.seats.dto.SeatSelectRequest;
 import com.example.SKALA_Mini_Project_1.modules.seats.service.SeatReservationService;
 
@@ -82,6 +85,64 @@ public class SeatController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
                     "message", e.getMessage(),
                     "status", "conflict"
+            ));
+        }
+    }
+
+    @PostMapping("/holds")
+    @Operation(
+            summary = "좌석 일괄 선점",
+            description = "JWT 인증 사용자 기준으로 최대 4개의 좌석을 원자적으로 선점합니다. 일부 실패 시 전체 선점이 취소되고 실패 좌석 목록을 반환합니다."
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    examples = @ExampleObject(
+                            name = "좌석 일괄 선점 요청 예시",
+                            value = """
+                                    {
+                                      "concertId": 1,
+                                      "seatIds": [101, 102, 103, 104]
+                                    }
+                                    """
+                    )
+            )
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "일괄 선점 성공"),
+            @ApiResponse(responseCode = "400", description = "요청 형식 오류 또는 4매 초과"),
+            @ApiResponse(responseCode = "401", description = "인증 필요"),
+            @ApiResponse(responseCode = "409", description = "일부 좌석 선점 실패")
+    })
+    public ResponseEntity<?> holdSeatsBatch(@RequestBody @Valid BatchSeatHoldRequest request) {
+        Long userId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        try {
+            SeatReservationService.BatchHoldResult result = seatReservationService.holdSeatsBatch(
+                    request.getConcertId(),
+                    request.getSeatIds(),
+                    userId
+            );
+
+            if (!result.success()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                        "message", "일부 좌석 선점에 실패했습니다.",
+                        "status", "conflict",
+                        "failedSeatIds", result.failedSeatIds()
+                ));
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "좌석 일괄 선점에 성공했습니다.",
+                    "status", "success",
+                    "heldSeatIds", result.heldSeatIds()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", e.getMessage(),
+                    "status", "bad_request"
             ));
         }
     }

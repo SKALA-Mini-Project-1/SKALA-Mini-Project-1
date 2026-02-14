@@ -11,7 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,8 @@ public class SeatReservationService {
         HELD,
         RELEASED
     }
+
+    public record BatchHoldResult(boolean success, List<Long> heldSeatIds, List<Long> failedSeatIds) {}
 
     private final SeatRepository seatRepository;
     private final RedisLockRepository redisLockRepository;
@@ -39,7 +45,7 @@ public class SeatReservationService {
             Integer seatNumber,
             Long userId
     ) {
-        Seat seat = validateSeat(seatId, section, rowNumber, seatNumber);
+        Seat seat = validateSeat(concertId, seatId, section, rowNumber, seatNumber);
         if (seat.getStatus() == SeatStatus.RESERVED) {
             throw new IllegalStateException("이미 판매된 좌석입니다.");
         }
@@ -98,13 +104,95 @@ public class SeatReservationService {
         return SeatHoldResult.HELD;
     }
 
+    public BatchHoldResult holdSeatsBatch(Long concertId, List<Long> seatIds, Long userId) {
+        if (seatIds == null || seatIds.isEmpty()) {
+            throw new IllegalArgumentException("좌석 ID 목록은 비어 있을 수 없습니다.");
+        }
+
+        Set<Long> uniqueSeatIds = new LinkedHashSet<>(seatIds);
+        if (uniqueSeatIds.size() > MAX_HOLD_SEAT_COUNT) {
+            throw new IllegalArgumentException("좌석은 최대 4매까지만 선택할 수 있습니다.");
+        }
+
+        String userIdString = String.valueOf(userId);
+        int currentHoldCount = redisLockRepository.countUserHeldSeats(concertId, userIdString);
+
+        List<Long> failedSeatIds = new ArrayList<>();
+        List<Seat> seatsToLock = new ArrayList<>();
+        List<Long> alreadyHeldByMe = new ArrayList<>();
+
+        for (Long seatId : uniqueSeatIds) {
+            Seat seat = seatRepository.findByIdAndConcertId(seatId, concertId)
+                    .orElse(null);
+
+            if (seat == null || seat.getStatus() == SeatStatus.RESERVED) {
+                failedSeatIds.add(seatId);
+                continue;
+            }
+
+            String owner = redisLockRepository.getSeatOwner(concertId, seat.getSection(), seat.getRowNumber(), seat.getSeatNumber());
+            if (owner == null) {
+                seatsToLock.add(seat);
+                continue;
+            }
+
+            if (Objects.equals(owner, userIdString)) {
+                alreadyHeldByMe.add(seatId);
+            } else {
+                failedSeatIds.add(seatId);
+            }
+        }
+
+        if (!failedSeatIds.isEmpty()) {
+            return new BatchHoldResult(false, List.of(), failedSeatIds);
+        }
+
+        if (currentHoldCount + seatsToLock.size() > MAX_HOLD_SEAT_COUNT) {
+            throw new IllegalArgumentException("좌석은 최대 4매까지만 선택할 수 있습니다.");
+        }
+
+        List<Long> newlyLockedSeatIds = new ArrayList<>();
+        for (Seat seat : seatsToLock) {
+            boolean locked = redisLockRepository.lockSeat(
+                    concertId,
+                    seat.getSection(),
+                    seat.getRowNumber(),
+                    seat.getSeatNumber(),
+                    userIdString
+            );
+
+            if (!locked) {
+                failedSeatIds.add(seat.getId());
+                for (Long lockedSeatId : newlyLockedSeatIds) {
+                    Seat lockedSeat = seatRepository.findById(lockedSeatId)
+                            .orElse(null);
+                    if (lockedSeat != null) {
+                        redisLockRepository.unlockSeat(
+                                concertId,
+                                lockedSeat.getSection(),
+                                lockedSeat.getRowNumber(),
+                                lockedSeat.getSeatNumber()
+                        );
+                    }
+                }
+                return new BatchHoldResult(false, List.of(), failedSeatIds);
+            }
+            newlyLockedSeatIds.add(seat.getId());
+        }
+
+        List<Long> heldSeatIds = new ArrayList<>(alreadyHeldByMe);
+        heldSeatIds.addAll(newlyLockedSeatIds);
+        return new BatchHoldResult(true, heldSeatIds, List.of());
+    }
+
     private Seat validateSeat(
+            Long concertId,
             Long seatId,
             String section,
             Integer rowNumber,
             Integer seatNumber
     ) {
-        Seat seat = seatRepository.findById(seatId)
+        Seat seat = seatRepository.findByIdAndConcertId(seatId, concertId)
                 .orElseThrow(() -> new EntityNotFoundException("좌석이 존재하지 않습니다. ID: " + seatId));
 
         if (!Objects.equals(seat.getSection(), section)
