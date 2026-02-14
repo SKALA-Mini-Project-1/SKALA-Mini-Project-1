@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -143,6 +144,64 @@ public class SeatController {
             return ResponseEntity.badRequest().body(Map.of(
                     "message", e.getMessage(),
                     "status", "bad_request"
+            ));
+        }
+    }
+
+    @DeleteMapping("/hold")
+    @Operation(
+            summary = "좌석 선점 해제",
+            description = "JWT 인증 사용자 기준으로 본인이 선점한 좌석을 해제합니다. 이미 해제된 좌석은 성공으로 처리됩니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "해제 성공 또는 이미 해제됨"),
+            @ApiResponse(responseCode = "400", description = "요청 형식 오류"),
+            @ApiResponse(responseCode = "401", description = "인증 필요"),
+            @ApiResponse(responseCode = "404", description = "좌석 ID 없음"),
+            @ApiResponse(responseCode = "409", description = "다른 사용자가 선점한 좌석")
+    })
+    public ResponseEntity<?> releaseSeat(@RequestBody @Valid SeatSelectRequest requestDto) {
+        Long userId = (Long) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        try {
+            SeatReservationService.SeatReleaseResult result = seatReservationService.releaseSeatHold(
+                    requestDto.getConcertId(),
+                    requestDto.getSeatId(),
+                    requestDto.getSection(),
+                    requestDto.getRowNumber(),
+                    requestDto.getSeatNumber(),
+                    userId
+            );
+
+            if (result == SeatReservationService.SeatReleaseResult.ALREADY_RELEASED) {
+                return ResponseEntity.ok(Map.of(
+                        "message", "이미 해제된 좌석입니다.",
+                        "status", "success",
+                        "action", "already_released"
+                ));
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "좌석 선점이 해제되었습니다.",
+                    "status", "success",
+                    "action", "released"
+            ));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "message", e.getMessage(),
+                    "status", "not_found"
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", e.getMessage(),
+                    "status", "bad_request"
+            ));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "message", e.getMessage(),
+                    "status", "conflict"
             ));
         }
     }
