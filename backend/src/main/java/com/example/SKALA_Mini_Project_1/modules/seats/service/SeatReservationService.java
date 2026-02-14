@@ -25,7 +25,7 @@ public class SeatReservationService {
     private final SeatRepository seatRepository;
     private final RedisLockRepository redisLockRepository;
 
-    /**
+    /*
      * 좌석 선점 (임시 예약)
      * 좌석 HOLD 상태는 Redis에만 저장하고, DB는 AVAILABLE/RESERVED만 유지합니다.
      */
