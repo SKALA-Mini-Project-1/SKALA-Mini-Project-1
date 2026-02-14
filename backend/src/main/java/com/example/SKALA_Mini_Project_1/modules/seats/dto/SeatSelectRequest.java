@@ -36,16 +36,11 @@ public class SeatSelectRequest {
     @Schema(description = "좌석 번호(1 이상)", example = "2")
     private Integer seatNumber;
 
-    @NotNull(message = "사용자 ID는 필수입니다.")
-    @Schema(description = "좌석 선점을 요청하는 사용자 ID", example = "1")
-    private Long userId;
-
-    public SeatSelectRequest(Long concertId, Long seatId, String section, Integer rowNumber, Integer seatNumber, Long userId) {
+    public SeatSelectRequest(Long concertId, Long seatId, String section, Integer rowNumber, Integer seatNumber) {
         this.concertId = concertId;
         this.seatId = seatId;
         this.section = section;
         this.rowNumber = rowNumber;
         this.seatNumber = seatNumber;
-        this.userId = userId;
     }
 }

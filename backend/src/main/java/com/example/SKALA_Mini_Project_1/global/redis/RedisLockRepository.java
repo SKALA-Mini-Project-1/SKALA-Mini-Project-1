@@ -1,6 +1,7 @@
 package com.example.SKALA_Mini_Project_1.global.redis;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.redis.core.RedisTemplate;
@@ -44,5 +45,21 @@ public class RedisLockRepository {
             return null;
         }
         return ttl;
+    }
+
+    public int countUserHeldSeats(Long concertId, String userId) {
+        Set<String> keys = redisTemplate.keys("seat:concert:" + concertId + ":*");
+        if (keys == null || keys.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+        for (String key : keys) {
+            String owner = redisTemplate.opsForValue().get(key);
+            if (userId.equals(owner)) {
+                count++;
+            }
+        }
+        return count;
     }
 }

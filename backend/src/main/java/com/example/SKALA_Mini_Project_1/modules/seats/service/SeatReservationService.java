@@ -17,6 +17,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Slf4j
 public class SeatReservationService {
+    private static final int MAX_HOLD_SEAT_COUNT = 4; // 1인 최대 4매 제한
+
     public enum SeatHoldResult {
         HELD,
         RELEASED
@@ -42,12 +44,39 @@ public class SeatReservationService {
             throw new IllegalStateException("이미 판매된 좌석입니다.");
         }
 
+        String userIdString = String.valueOf(userId);
+        String currentOwner = redisLockRepository.getSeatOwner(concertId, section, rowNumber, seatNumber);
+
+        if (Objects.equals(currentOwner, userIdString)) {
+            redisLockRepository.unlockSeat(concertId, section, rowNumber, seatNumber);
+            log.info("좌석 {} 선점 해제 성공 (사용자: {})", seatId, userId);
+            return SeatHoldResult.RELEASED;
+        }
+
+        if (currentOwner != null) {
+            log.info(
+                    "좌석 {} - {}-{}-{} 선점 실패: 현재 소유자(userId: {}), 시도자(userId: {})",
+                    concertId,
+                    section,
+                    rowNumber,
+                    seatNumber,
+                    currentOwner,
+                    userId
+            );
+            throw new IllegalStateException("이미 다른 사용자가 선택한 좌석입니다.");
+        }
+
+        int currentHoldCount = redisLockRepository.countUserHeldSeats(concertId, userIdString);
+        if (currentHoldCount >= MAX_HOLD_SEAT_COUNT) {
+            throw new IllegalArgumentException("좌석은 최대 4매까지만 선택할 수 있습니다.");
+        }
+
         // Redis를 통한 선점 시도 (HOLD는 Redis TTL로만 관리)
-        boolean isLocked = redisLockRepository.lockSeat(concertId, section, rowNumber, seatNumber, userId.toString());
+        boolean isLocked = redisLockRepository.lockSeat(concertId, section, rowNumber, seatNumber, userIdString);
         
         if (!isLocked) {
-            String currentOwner = redisLockRepository.getSeatOwner(concertId, section, rowNumber, seatNumber);
-            if (Objects.equals(currentOwner, userId.toString())) {
+            String lockOwner = redisLockRepository.getSeatOwner(concertId, section, rowNumber, seatNumber);
+            if (Objects.equals(lockOwner, userIdString)) {
                 redisLockRepository.unlockSeat(concertId, section, rowNumber, seatNumber);
                 log.info("좌석 {} 선점 해제 성공 (사용자: {})", seatId, userId);
                 return SeatHoldResult.RELEASED;
@@ -59,7 +88,7 @@ public class SeatReservationService {
                     section,
                     rowNumber,
                     seatNumber,
-                    currentOwner,
+                    lockOwner,
                     userId
             );
             throw new IllegalStateException("이미 다른 사용자가 선택한 좌석입니다.");

@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,23 +31,28 @@ public class SeatController {
     @PostMapping("/{seatId}/hold")
     @Operation(
             summary = "좌석 선점 또는 해제",
-            description = "좌석을 선점합니다. 이미 같은 사용자가 선점한 좌석을 다시 요청하면 선점이 해제됩니다."
+            description = "JWT 인증 사용자 기준으로 좌석을 선점합니다. 이미 같은 사용자가 선점한 좌석을 다시 요청하면 선점이 해제됩니다."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "선점 성공 또는 선점 해제 성공"),
-            @ApiResponse(responseCode = "400", description = "요청 좌석 정보 불일치"),
+            @ApiResponse(responseCode = "400", description = "요청 좌석 정보 불일치 또는 4매 초과"),
+            @ApiResponse(responseCode = "401", description = "인증 필요"),
             @ApiResponse(responseCode = "404", description = "좌석 ID 없음"),
             @ApiResponse(responseCode = "409", description = "다른 사용자가 이미 선점했거나 판매 완료된 좌석")
     })
     public ResponseEntity<?> reserveSeat(@RequestBody @Valid SeatSelectRequest requestDto) {
         try {
+            Long userId = (Long) SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
             SeatReservationService.SeatHoldResult result = seatReservationService.reserveSeatTemporary(
                     requestDto.getConcertId(),
                     requestDto.getSeatId(),
                     requestDto.getSection(),
                     requestDto.getRowNumber(),
                     requestDto.getSeatNumber(),
-                    requestDto.getUserId()
+                    userId
             );
 
             if (result == SeatReservationService.SeatHoldResult.RELEASED) {
