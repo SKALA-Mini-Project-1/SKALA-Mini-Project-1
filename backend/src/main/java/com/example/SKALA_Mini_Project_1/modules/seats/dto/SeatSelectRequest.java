@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Schema(
         description = "좌석 선점/해제 요청 DTO. 동일 사용자가 이미 선점한 좌석을 다시 요청하면 선점 해제됩니다."
 )
-public class RequestSeatsDto {
+public class SeatSelectRequest {
 
     @NotNull(message = "콘서트 ID는 필수입니다.")
     @Schema(description = "콘서트 ID", example = "1")
@@ -40,7 +40,7 @@ public class RequestSeatsDto {
     @Schema(description = "좌석 선점을 요청하는 사용자 ID", example = "1")
     private Long userId;
 
-    public RequestSeatsDto(Long concertId, Long seatId, String section, Integer rowNumber, Integer seatNumber, Long userId) {
+    public SeatSelectRequest(Long concertId, Long seatId, String section, Integer rowNumber, Integer seatNumber, Long userId) {
         this.concertId = concertId;
         this.seatId = seatId;
         this.section = section;

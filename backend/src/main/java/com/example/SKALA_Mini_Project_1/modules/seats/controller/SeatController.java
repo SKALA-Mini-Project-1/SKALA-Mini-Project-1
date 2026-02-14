@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.SKALA_Mini_Project_1.modules.seats.dto.RequestSeatsDto;
+import com.example.SKALA_Mini_Project_1.modules.seats.dto.SeatSelectRequest;
 import com.example.SKALA_Mini_Project_1.modules.seats.service.SeatReservationService;
 
 import java.util.Map;
@@ -38,7 +38,7 @@ public class SeatController {
             @ApiResponse(responseCode = "404", description = "좌석 ID 없음"),
             @ApiResponse(responseCode = "409", description = "다른 사용자가 이미 선점했거나 판매 완료된 좌석")
     })
-    public ResponseEntity<?> reserveSeat(@RequestBody @Valid RequestSeatsDto requestDto) {
+    public ResponseEntity<?> reserveSeat(@RequestBody @Valid SeatSelectRequest requestDto) {
         try {
             SeatReservationService.SeatHoldResult result = seatReservationService.reserveSeatTemporary(
                     requestDto.getConcertId(),
