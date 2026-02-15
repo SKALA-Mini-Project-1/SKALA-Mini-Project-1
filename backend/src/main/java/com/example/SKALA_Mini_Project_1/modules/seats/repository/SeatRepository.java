@@ -1,5 +1,6 @@
 package com.example.SKALA_Mini_Project_1.modules.seats.repository;
 
+import java.util.Optional;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,4 +23,16 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
             nativeQuery = true
     )
     List<Object[]> findSeatMapByConcertId(Long concertId);
+
+    @Query(
+            value = """
+                    SELECT s.*
+                    FROM seats s
+                    JOIN schedules sc ON sc.id = s.schedule_id
+                    WHERE s.id = :seatId
+                      AND sc.concert_id = :concertId
+                    """,
+            nativeQuery = true
+    )
+    Optional<Seat> findByIdAndConcertId(Long seatId, Long concertId);
 }

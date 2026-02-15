@@ -1,5 +1,9 @@
 package com.example.SKALA_Mini_Project_1.global.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import java.util.List;
 
 import org.springframework.context.annotation.Bean;
@@ -21,12 +25,15 @@ import com.example.SKALA_Mini_Project_1.global.jwt.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.Map;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ObjectMapper objectMapper;
     
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -58,6 +65,34 @@ public class SecurityConfig {
                 ).permitAll()
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(401);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write(
+                            objectMapper.writeValueAsString(
+                                    Map.of(
+                                            "status", 401,
+                                            "message", "로그인이 필요합니다. 다시 로그인 후 시도해주세요."
+                                    )
+                            )
+                    );
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(403);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write(
+                            objectMapper.writeValueAsString(
+                                    Map.of(
+                                            "status", 403,
+                                            "message", "접근 권한이 없습니다. 요청 권한을 확인해주세요."
+                                    )
+                            )
+                    );
+                })
             )
             // JWT 필터 추가
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

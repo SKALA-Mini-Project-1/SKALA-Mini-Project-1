@@ -19,21 +19,21 @@ public class SeatSelectRequest {
     private Long concertId;
 
     @NotNull(message = "좌석 ID는 필수입니다.")
-    @Schema(description = "좌석 PK ID (section/rowNumber/seatNumber와 동일 좌석이어야 함)", example = "2")
+    @Schema(description = "좌석 PK ID (section/rowNumber/seatNumber와 동일 좌석이어야 함)", example = "401")
     private Long seatId;
 
     @NotBlank(message = "구역은 필수입니다.")
-    @Schema(description = "좌석 구역 코드", example = "A")
+    @Schema(description = "좌석 구역 코드", example = "B")
     private String section;
 
     @NotNull(message = "열 정보는 필수입니다.")
     @Positive(message = "열은 1 이상이어야 합니다.")
-    @Schema(description = "열 번호(1 이상)", example = "1")
+    @Schema(description = "열 번호(1 이상)", example = "6")
     private Integer rowNumber;
 
     @NotNull(message = "좌석 번호는 필수입니다.")
     @Positive(message = "좌석 번호는 1 이상이어야 합니다.")
-    @Schema(description = "좌석 번호(1 이상)", example = "2")
+    @Schema(description = "좌석 번호(1 이상)", example = "1")
     private Integer seatNumber;
 
     public SeatSelectRequest(Long concertId, Long seatId, String section, Integer rowNumber, Integer seatNumber) {
