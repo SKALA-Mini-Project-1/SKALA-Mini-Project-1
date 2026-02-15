@@ -59,15 +59,11 @@ public class BookingService {
 
             String owner = redisLockRepository.getSeatOwner(
                     request.getConcertId(),
-                    seat.getSection(),
-                    seat.getRowNumber(),
-                    seat.getSeatNumber()
+                    seat.getSeatId()
             );
             Long ttl = redisLockRepository.getSeatLockTtlSeconds(
                     request.getConcertId(),
-                    seat.getSection(),
-                    seat.getRowNumber(),
-                    seat.getSeatNumber()
+                    seat.getSeatId()
             );
 
             if (!Objects.equals(owner, String.valueOf(userId)) || ttl == null) {
