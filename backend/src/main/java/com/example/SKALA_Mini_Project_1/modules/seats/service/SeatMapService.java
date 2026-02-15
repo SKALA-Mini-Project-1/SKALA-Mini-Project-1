@@ -43,8 +43,8 @@ public class SeatMapService {
         BigDecimal price = (BigDecimal) row[6];
 
         // Redis에 캐싱된 사용자 정보를 가져옴
-        String owner = redisLockRepository.getSeatOwner(concertId, section, rowNumber, seatNumber);
-        Long ttlSeconds = redisLockRepository.getSeatLockTtlSeconds(concertId, section, rowNumber, seatNumber);
+        String owner = redisLockRepository.getSeatOwner(concertId, seatId);
+        Long ttlSeconds = redisLockRepository.getSeatLockTtlSeconds(concertId, seatId);
 
         Boolean isHeldByMe = null;
         OffsetDateTime holdExpiresAt = null;

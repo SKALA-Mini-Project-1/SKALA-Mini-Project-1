@@ -53,9 +53,6 @@ public class SeatController {
             SeatReservationService.SeatHoldResult result = seatReservationService.reserveSeatTemporary(
                     requestDto.getConcertId(),
                     requestDto.getSeatId(),
-                    requestDto.getSection(),
-                    requestDto.getRowNumber(),
-                    requestDto.getSeatNumber(),
                     userId
             );
 
@@ -169,9 +166,6 @@ public class SeatController {
             SeatReservationService.SeatReleaseResult result = seatReservationService.releaseSeatHold(
                     requestDto.getConcertId(),
                     requestDto.getSeatId(),
-                    requestDto.getSection(),
-                    requestDto.getRowNumber(),
-                    requestDto.getSeatNumber(),
                     userId
             );
 
