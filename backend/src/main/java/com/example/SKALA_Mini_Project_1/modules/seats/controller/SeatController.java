@@ -221,8 +221,8 @@ public class SeatController {
 
     @PostMapping("/leave")
     public ResponseEntity<?> leaveSeatScreen(
-            @RequestParam Long concertId,
-            @RequestParam Long scheduleId
+            @RequestParam("concertId") Long concertId,
+            @RequestParam("scheduleId") Long scheduleId
     ) {
         Long userId = (Long) SecurityContextHolder.getContext()
                 .getAuthentication()

@@ -20,6 +20,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RedisLockRepository {
     private static final String LOCK_WITH_LIMIT_SCRIPT = """
+            local members = redis.call('SMEMBERS', KEYS[2])
+            for _, seatId in ipairs(members) do
+                local lockKey = ARGV[5] .. seatId
+                local owner = redis.call('GET', lockKey)
+                if owner ~= ARGV[1] then
+                    redis.call('SREM', KEYS[2], seatId)
+                end
+            end
+
             local holdCount = tonumber(redis.call('SCARD', KEYS[2]) or '0')
             local maxHolds = tonumber(ARGV[2])
             if holdCount >= maxHolds then
@@ -32,10 +41,16 @@ public class RedisLockRepository {
             end
 
             redis.call('SADD', KEYS[2], ARGV[4])
+            redis.call('PEXPIRE', KEYS[2], ARGV[3])
             return 1
             """;
     private static final String UNLOCK_IF_OWNER_AND_REMOVE_HOLD_SCRIPT = """
-            if redis.call('GET', KEYS[1]) == ARGV[1] then
+            local owner = redis.call('GET', KEYS[1])
+            if not owner then
+                redis.call('SREM', KEYS[2], ARGV[2])
+                return 1
+            end
+            if owner == ARGV[1] then
                 redis.call('DEL', KEYS[1])
                 redis.call('SREM', KEYS[2], ARGV[2])
                 return 1
@@ -88,7 +103,8 @@ public class RedisLockRepository {
                 userId,
                 String.valueOf(maxHoldCount),
                 String.valueOf(Duration.ofMinutes(5).toMillis()),
-                String.valueOf(seatId)
+                String.valueOf(seatId),
+                RedisKeyGenerator.seatLockKeyPrefix(concertId, scheduleId)
         );
 
         if (result != null && result == 1L) {
@@ -132,31 +148,37 @@ public class RedisLockRepository {
 
     public int countUserHeldSeats(Long concertId, Long scheduleId, String userId) {
         String holdSetKey = RedisKeyGenerator.seatUserHoldsKey(concertId, scheduleId, userId);
-        Long holdCount = redisTemplate.opsForSet().size(holdSetKey);
-        if (holdCount != null && holdCount > 0) {
-            return holdCount.intValue();
+        Set<String> seatIds = redisTemplate.opsForSet().members(holdSetKey);
+        if (seatIds == null || seatIds.isEmpty()) {
+            return 0;
         }
-        if (holdCount != null && holdCount == 0L) {
-            // 기존 스캔 기반 데이터가 남아있는 경우를 위한 호환성 복구
-            Set<String> keys = scanKeys("seat:concert:" + concertId + ":schedule:" + scheduleId + ":*");
-            if (keys == null || keys.isEmpty()) {
-                return 0;
+
+        int validCount = 0;
+        for (String seatIdRaw : seatIds) {
+            Long seatId;
+            try {
+                seatId = Long.parseLong(seatIdRaw);
+            } catch (NumberFormatException e) {
+                redisTemplate.opsForSet().remove(holdSetKey, seatIdRaw);
+                continue;
             }
-            int recovered = 0;
-            for (String key : keys) {
-                String owner = redisTemplate.opsForValue().get(key);
-                if (!userId.equals(owner)) {
-                    continue;
-                }
-                Long seatId = parseSeatId(key);
-                if (seatId != null) {
-                    redisTemplate.opsForSet().add(holdSetKey, String.valueOf(seatId));
-                }
-                recovered++;
+
+            String owner = redisTemplate.opsForValue()
+                    .get(RedisKeyGenerator.seatLockKey(concertId, scheduleId, seatId));
+            if (userId.equals(owner)) {
+                validCount++;
+                continue;
             }
-            return recovered;
+            redisTemplate.opsForSet().remove(holdSetKey, seatIdRaw);
         }
-        return 0;
+
+        if (validCount == 0) {
+            redisTemplate.delete(holdSetKey);
+            return 0;
+        }
+
+        redisTemplate.expire(holdSetKey, Duration.ofMinutes(5));
+        return validCount;
     }
 
     public int releaseUserHeldSeats(Long concertId, Long scheduleId, String userId) {

@@ -13,6 +13,10 @@ public class RedisKeyGenerator {
         return "seat:concert:" + concertId + ":schedule:" + scheduleId + ":seatId:" + seatId;
     }
 
+    public static String seatLockKeyPrefix(Long concertId, Long scheduleId) {
+        return "seat:concert:" + concertId + ":schedule:" + scheduleId + ":seatId:";
+    }
+
     public static String seatActiveKey(Long concertId, Long scheduleId) {
         return "seat:active:concert:" + concertId + ":schedule:" + scheduleId;
     }
